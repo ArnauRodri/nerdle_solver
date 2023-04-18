@@ -23,7 +23,6 @@ def get_values():
             break
         print('WRONG INPUT')
 
-
     # use chars
     _has = list(set([FIRST[i] for i in range(SIZE) if first_got[i] != '-'] +
                     [SECOND[i] for i in range(SIZE) if second_got[i] != '-']))
@@ -63,17 +62,22 @@ def check_has_pos_not(lp, _has_pos_not):
 
 def regex_filter(no_regex_list):
     # is supposed that on every side of operations are numbers
-    for chunk in ''.join(no_regex_list).split('='):
-        if not chunk:  # if one side of equal is empty
-            return False
-        if re.findall(r'[-+*/=][-+*/=]', chunk):  # two joined symbols
-            return False
-        if re.findall(r'^[-+*/=]', chunk) or re.findall(r'[-+*/=]$', chunk):  # no starts or ends with symbols
-            return False
-        if re.findall(r'/0+$', chunk) or re.findall(r'/0+[-+*/=]', chunk):  # no zero division
-            return False
-        if re.findall(r'^0', chunk):  # no zero start
-            return False
+    str_p = ''.join(no_regex_list)
+
+    if re.findall('[-+*/=][-+*/=]', str_p):  # two joined symbols
+        return False
+
+    if re.findall(r'^[-+*/=]', str_p) or re.findall(r'[-+*/=]$', str_p):  # no starts or ends with symbols
+        return False
+
+    if re.findall(r'/0+$', str_p) or re.findall(r'/0+[-+*/=]', str_p):  # no zero division
+        return False
+
+    if re.findall(r'^0', str_p):  # no zero start
+        return False
+
+    if re.findall(r'=.+[-+*/].+', str_p):  # no operations other side of equal
+        return False
 
     return True
 
@@ -110,18 +114,15 @@ def operate(operate_list):
         operate_list.insert(i_op, OPS[op](float(op_a), float(op_b)))
         operate(operate_list)
 
-    return operate_list[0]
+    return float(operate_list[0])
 
 
-def check_sol(res_a: float, res_b: float):
+def check_sol(res_a, res_b):
     return int(res_a) == int(res_b) if res_a.is_integer() and res_b.is_integer() else False
 
 
-def print_result(lp):
-    print('FOUND A POSSIBLE SOLUTION:', ' '.join(lp))
-
-
 def find_in(to_find, _has_pos, _has_pos_not):
+    all_solutions = []
     for p in permutations(to_find):
         lp = list(p)
 
@@ -133,11 +134,10 @@ def find_in(to_find, _has_pos, _has_pos_not):
 
         merged_lp = merge_nums(lp)
 
-        equal_pos = merged_lp.index('=')
-        results = [operate(o) for o in [merged_lp[:equal_pos], merged_lp[:equal_pos]]]
+        result = operate(merged_lp[:merged_lp.index('=')])
 
-        if check_sol(*results):
-            print_result(p)
+        if check_sol(result, float(merged_lp[-1])):
+            print('FOUND A POSSIBLE SOLUTION:', ' '.join(lp)) if p not in p else all_solutions.append(p)
 
 
 if __name__ == '__main__':
