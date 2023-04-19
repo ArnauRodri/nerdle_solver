@@ -49,11 +49,11 @@ def get_values() -> tuple[list[str], list[str], list[list[str]]]:
 
     # has not positions
     _has_pos_not: list[list[str]] = []
-    for i in range(SIZE):
+    for i, p in enumerate(zip(first_got, second_got)):
         _has_pos_not.append([])
-        if first_got[i] == 'p':
+        if p[0] == 'p':
             _has_pos_not[-1].append(FIRST[i])
-        if second_got[i] == 'p':
+        if p[1] == 'p':
             _has_pos_not[-1].append(SECOND[i])
 
     return _has, _has_pos, _has_pos_not
