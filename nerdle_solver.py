@@ -1,5 +1,5 @@
 # This file is part of the nerdle_solver distribution
-# (https://github.com/ArnauRodri/nerdle_solver.
+# (https://github.com/nerdle_solver or http://nerdle_solver.github.io).
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ FIRST = ['9', '-', '1', '0', '/', '5', '=', '7']
 SECOND = ['4', '*', '6', '+', '8', '=', '3', '2']
 SIZE = 8
 
-OPS = {'+': lambda a, b: a+b, '-': lambda a, b: a-b, '*': lambda a, b: a*b, '/': lambda a, b: a/b}
+OPS = {'+': lambda a, b: a + b, '-': lambda a, b: a - b, '*': lambda a, b: a * b, '/': lambda a, b: a / b}
 
 
 def get_values() -> tuple[list[str], list[str], list[list[str]]]:
@@ -34,10 +34,13 @@ def get_values() -> tuple[list[str], list[str], list[list[str]]]:
         first_got: list[str] = [*input()]
         print(''.join(SECOND))
         second_got: list[str] = [*input()]
-        if not ''.join(first_got).strip('-pg') or not ''.join(second_got).strip('-pg') or \
-                len(first_got) != SIZE or len(first_got) != SIZE:
+
+        if ''.join(first_got).strip('-pg') or ''.join(second_got).strip('-pg') or \
+                len(first_got) != SIZE or len(second_got) != SIZE:
+            print('WRONG INPUT\n')
+
+        else:
             break
-        print('WRONG INPUT')
 
     # use chars
     _has: list[str] = list(set([FIRST[i] for i in range(SIZE) if first_got[i] != '-'] +
@@ -59,25 +62,34 @@ def get_values() -> tuple[list[str], list[str], list[list[str]]]:
     return _has, _has_pos, _has_pos_not
 
 
-def get_solutions(_has: list[str], _has_pos: list[str], _has_pos_not: list[list[str]]):
+def print_solutions(sol: list[tuple[str]]) -> None:  # prints every solution
+    for s in sol:
+        print('FOUND A POSSIBLE SOLUTION', ' '.join(s))
+
+
+def get_solutions(_has: list[str], _has_pos: list[str], _has_pos_not: list[list[str]]) -> list[tuple[str]]:
     if len(_has) < SIZE:  # fill with permutations
         to_find = [_has.copy() + list(tf) for tf in permutations(_has, SIZE - len(_has)) if tf.count('=') == 0]
     else:  # enough
         to_find = [_has]
 
-    for tf in to_find:  # find all
-        find_in(tf, _has_pos, _has_pos_not)
+    sol = []
+    for tf in to_find: # get all solutions possible
+        tmp_sol = find_in(tf, _has_pos, _has_pos_not)
+        if tmp_sol:
+            sol += tmp_sol
+    return list(set(sol))  # returns all solutions found
 
 
-def check_has_pos(lp: list[str], _has_pos: list[str]):
+def check_has_pos(lp: list[str], _has_pos: list[str]) -> bool:
     return 0 not in [0 if _has_pos[i] and lp[i] != _has_pos[i] else 1 for i in range(SIZE)]
 
 
-def check_has_pos_not(lp, _has_pos_not):
+def check_has_pos_not(lp, _has_pos_not) -> bool:
     return 0 not in [0 if _has_pos_not[i] != [''] and lp[i] in _has_pos_not[i] else 1 for i in range(SIZE)]
 
 
-def regex_filter(no_regex_list: list[str]):
+def regex_filter(no_regex_list: list[str]) -> bool:
     # is supposed that on every side of operations are numbers
     str_p: str = ''.join(no_regex_list)
 
@@ -96,7 +108,7 @@ def regex_filter(no_regex_list: list[str]):
     return True
 
 
-def merge_nums(no_merge_nums_list):
+def merge_nums(no_merge_nums_list) -> list[str]:
     # merge all nums
     merge_nums_list: list[str] = ['0']
     for c in no_merge_nums_list:
@@ -107,7 +119,8 @@ def merge_nums(no_merge_nums_list):
     return [str(int(c)) if c.isdigit() else c for c in merge_nums_list]
 
 
-def operate(operate_list: list[str]):
+def operate(operate_list: list[str]) -> float:
+    # operates following the hierarchy of operations
     i_op = None
 
     for i in range(len(operate_list)):
@@ -131,28 +144,31 @@ def operate(operate_list: list[str]):
     return float(operate_list[0])
 
 
-def check_sol(res_a: float, res_b: float):
+def check_sol(res_a: float, res_b: float) -> bool:
+    # check if is a solution
     return int(res_a) == int(res_b) if res_a.is_integer() and res_b.is_integer() else False
 
 
-def find_in(to_find, _has_pos, _has_pos_not):
-    all_solutions: list[list[str]] = []
-    for p in permutations(to_find):
+def find_in(to_find, _has_pos, _has_pos_not) -> list[tuple[str]]:
+    all_solutions: list[tuple[str]] = []
+
+    for p in permutations(to_find):  # for every permutation
         lp: list[str] = list(p)
 
-        if not check_has_pos(lp, _has_pos) or not check_has_pos_not(lp, _has_pos_not):
+        # if positions not mach or no correct regex
+        if not check_has_pos(lp, _has_pos) or not check_has_pos_not(lp, _has_pos_not) or not regex_filter(lp):
             continue
 
-        if not regex_filter(lp):
-            continue
+        merged_lp: list[str] = merge_nums(lp)  # merge nums
 
-        merged_lp: list[str] = merge_nums(lp)
+        result: float = operate(merged_lp[:merged_lp.index('=')])  # operate
 
-        result: float = operate(merged_lp[:merged_lp.index('=')])
+        # if is a solution and not in solution list
+        if check_sol(result, float(merged_lp[-1])) and p not in all_solutions:
+            all_solutions.append(p)
 
-        if check_sol(result, float(merged_lp[-1])):
-            print('FOUND A POSSIBLE SOLUTION:', ' '.join(lp)) if p not in p else all_solutions.append(p)
+    return all_solutions
 
 
 if __name__ == '__main__':
-    get_solutions(*get_values())
+    print_solutions(get_solutions(*get_values()))
